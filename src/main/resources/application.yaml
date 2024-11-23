@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: CodeControl-Backend
+
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5433/codecontrol1
+    username: postgres
+    password: postgres2024
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+CodeControl-Backend:
+  app:
+    jwtCookieName: codecontrol-jwt
+    jwtRefreshCookieName: codecontrol-jwt-refresh
+    jwtSecret: codeControlSecretKey
+    jwtExpirationMs: 86400000
+    jwtRefreshExpirationMs: 86400000
