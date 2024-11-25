@@ -19,6 +19,7 @@ CodeControl-Backend:
   app:
     jwtCookieName: codecontrol-jwt
     jwtRefreshCookieName: codecontrol-jwt-refresh
-    jwtSecret: codeControlSecretKey
-    jwtExpirationMs: 86400000
-    jwtRefreshExpirationMs: 86400000
+    jwtSecret: codeControlSecretKey-12345678909876543212345678908765432123456789098761234567890
+    jwtExpirationMs: 3600000
+    jwtRefreshExpirationMs: 18000000
+    refreshTokenSlidingWindowPeriod: 3600000
