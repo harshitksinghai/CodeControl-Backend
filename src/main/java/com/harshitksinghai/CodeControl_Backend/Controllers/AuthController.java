@@ -1,16 +1,12 @@
 package com.harshitksinghai.CodeControl_Backend.Controllers;
 
-import com.harshitksinghai.CodeControl_Backend.Config.Jwt.CookieUtils;
 import com.harshitksinghai.CodeControl_Backend.Config.Jwt.JwtUtils;
-import com.harshitksinghai.CodeControl_Backend.DTOs.RequestDTO.LoginRequestDTO;
-import com.harshitksinghai.CodeControl_Backend.DTOs.RequestDTO.OnBoardRequestDTO;
-import com.harshitksinghai.CodeControl_Backend.DTOs.RequestDTO.RegisterRequestDTO;
+import com.harshitksinghai.CodeControl_Backend.DTOs.RequestDTO.*;
 import com.harshitksinghai.CodeControl_Backend.DTOs.ResponseDTO.CommonResponseDTO;
-import com.harshitksinghai.CodeControl_Backend.Models.RefreshToken;
 import com.harshitksinghai.CodeControl_Backend.Services.AuthService;
+import com.harshitksinghai.CodeControl_Backend.Services.Impl.EmailServiceImpl;
 import com.harshitksinghai.CodeControl_Backend.Services.RefreshTokenService;
 import com.harshitksinghai.CodeControl_Backend.Services.UserService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,8 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.servlet.http.HttpServletResponse;
-
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -46,6 +40,9 @@ public class AuthController {
     @Value("${CodeControl-Backend.app.jwtRefreshCookieName}")
     private String jwtRefreshCookieName;
 
+    @Autowired
+    EmailServiceImpl emailService;
+
     @PostMapping("/verify-email")
     public boolean verifyEmail(@RequestParam String email){
         return authService.verifyEmail(email);
@@ -67,6 +64,16 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/send-otp")
+    public ResponseEntity<String> sendOTPEmail(@RequestParam String email){
+        return authService.sendOTPEmail(email);
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<CommonResponseDTO> verifyOTP(@RequestBody VerifyOTPRequestDTO verifyOTPRequestDTO){
+        return authService.verifyOTP(verifyOTPRequestDTO);
+    }
+
     @PostMapping("/register")
     public ResponseEntity<CommonResponseDTO> register(@RequestBody RegisterRequestDTO registerRequestDTO, HttpServletResponse response){
         CommonResponseDTO commonResponseDTO = new CommonResponseDTO();
@@ -79,6 +86,22 @@ public class AuthController {
         }
         else{
             commonResponseDTO.setMessage("User already exists!");
+            return new ResponseEntity<>(commonResponseDTO, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping("/change-password-and-login")
+    public ResponseEntity<CommonResponseDTO> changePasswordAndLogin(@RequestBody ChangePasswordAndLoginRequestDTO changePasswordAndLoginRequestDTO, HttpServletResponse response){
+        CommonResponseDTO commonResponseDTO = new CommonResponseDTO();
+
+        boolean res = authService.changePasswordAndLogin(changePasswordAndLoginRequestDTO, response);
+        commonResponseDTO.setStatus(res);
+        if(res){
+            commonResponseDTO.setMessage("Login successful!");
+            return new ResponseEntity<>(commonResponseDTO, HttpStatus.OK);
+        }
+        else{
+            commonResponseDTO.setMessage("Login failed!");
             return new ResponseEntity<>(commonResponseDTO, HttpStatus.BAD_REQUEST);
         }
     }
@@ -109,16 +132,24 @@ public class AuthController {
         }
     }
 
-    @
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
+        boolean success = authService.logout(request, response);
+        if (success) {
+            return ResponseEntity.ok("Logged out successfully.");
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Logout failed.");
+        }
+    }
 
-
-
-
+    @GetMapping("/clear-expired-otps-links")
+    public ResponseEntity<String> clearExpiredOTPLink(){
+        return authService.clearExpiredOTPsLinks();
+    }
 
     @PostMapping("/refresh-token")
     public ResponseEntity<String> refreshAccessToken(HttpServletRequest request, HttpServletResponse response) {
         return authService.refreshTokenAccess(request, response);
     }
-
 
 }

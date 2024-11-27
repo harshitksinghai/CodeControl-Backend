@@ -100,6 +100,10 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
         return (int) (expiryDate.toEpochMilli() - now.toEpochMilli());
     }
 
+    @Override
+    public void deleteById(Long id) {
+        refreshTokenRepository.deleteById(id);
+    }
 
 
 }
