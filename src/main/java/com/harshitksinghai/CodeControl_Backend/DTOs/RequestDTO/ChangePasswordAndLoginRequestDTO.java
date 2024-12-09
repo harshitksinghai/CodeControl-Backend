@@ -5,5 +5,5 @@ import lombok.Data;
 @Data
 public class ChangePasswordAndLoginRequestDTO {
     private String email;
-    private String newPassword;
+    private String password;
 }

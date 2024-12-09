@@ -71,9 +71,30 @@ public class AuthServiceImpl implements AuthService {
     private String siteURL;
 
     @Override
-    public boolean verifyEmail(String email) {
-        Optional<User> user = userRepository.findByEmail(email);
-        return user.isPresent();
+    public ResponseEntity<CommonResponseDTO> verifyEmail(String email) {
+        CommonResponseDTO commonResponseDTO = new CommonResponseDTO();
+
+        try {
+            Optional<User> userOpt = userRepository.findByEmail(email);
+            if(userOpt.isPresent()){
+                commonResponseDTO.setStatus(true);
+                if(userOpt.get().getPassword() != null){
+                    commonResponseDTO.setUtil("true");
+                }
+                else{
+                    commonResponseDTO.setUtil("false");
+                }
+                return new ResponseEntity<>(commonResponseDTO, HttpStatus.OK);
+            }
+            else{
+                commonResponseDTO.setStatus(false);
+                return new ResponseEntity<>(commonResponseDTO, HttpStatus.OK);
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        return new ResponseEntity<>(commonResponseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+
     }
 
     @Override
@@ -104,16 +125,21 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ResponseEntity<String> sendOTPEmail(String email) {
+    public ResponseEntity<CommonResponseDTO> sendOTPEmail(String email) {
+        CommonResponseDTO commonResponseDTO = new CommonResponseDTO();
         try{
             String otp = otpService.generateOTP();
             otpService.addOTPDetails(email, otp);
 
             emailService.sendOTPEmail(email, otp);
-            return new ResponseEntity<>("OTP sent successfully!", HttpStatus.OK);
+            commonResponseDTO.setStatus(true);
+            commonResponseDTO.setMessage("OTP sent successfully!");
+            return new ResponseEntity<>(commonResponseDTO, HttpStatus.OK);
         } catch(Exception e){
             e.printStackTrace();
-            return new ResponseEntity<>("Unable to send otp!", HttpStatus.INTERNAL_SERVER_ERROR);
+            commonResponseDTO.setStatus(false);
+            commonResponseDTO.setMessage("Unable to send otp!");
+            return new ResponseEntity<>(commonResponseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -168,7 +194,7 @@ public class AuthServiceImpl implements AuthService {
             Optional<User> userOpt = userRepository.findByEmail(email);
             User user = userOpt.get();
             String role = String.valueOf(user.getRole());
-            user.setPassword(passwordEncoder.encode(changePasswordAndLoginRequestDTO.getNewPassword()));
+            user.setPassword(passwordEncoder.encode(changePasswordAndLoginRequestDTO.getPassword()));
 
             String jwtToken = jwtUtils.generateToken(email, role);
             RefreshToken refreshToken = refreshTokenService.createRefreshToken(email);

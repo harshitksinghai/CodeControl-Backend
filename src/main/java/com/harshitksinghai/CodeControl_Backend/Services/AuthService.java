@@ -14,7 +14,7 @@ public interface AuthService {
 
     boolean register(RegisterRequestDTO registerUserRequestDTO, HttpServletResponse response);
 
-    boolean verifyEmail(String email);
+    ResponseEntity<CommonResponseDTO> verifyEmail(String email);
 
     @Transactional
     boolean changePasswordAndLogin(ChangePasswordAndLoginRequestDTO changePasswordAndLoginRequestDTO, HttpServletResponse response);
@@ -29,5 +29,5 @@ public interface AuthService {
 
     ResponseEntity<String> refreshTokenAccess(HttpServletRequest request, HttpServletResponse response);
 
-    ResponseEntity<String> sendOTPEmail(String email);
+    ResponseEntity<CommonResponseDTO> sendOTPEmail(String email);
 }

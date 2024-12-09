@@ -44,7 +44,7 @@ public class AuthController {
     EmailServiceImpl emailService;
 
     @PostMapping("/verify-email")
-    public boolean verifyEmail(@RequestParam String email){
+    public ResponseEntity<CommonResponseDTO> verifyEmail(@RequestParam String email){
         return authService.verifyEmail(email);
     }
 
@@ -65,7 +65,7 @@ public class AuthController {
     }
 
     @PostMapping("/send-otp")
-    public ResponseEntity<String> sendOTPEmail(@RequestParam String email){
+    public ResponseEntity<CommonResponseDTO> sendOTPEmail(@RequestParam String email){
         return authService.sendOTPEmail(email);
     }
 
@@ -133,12 +133,17 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<String> logout(HttpServletRequest request, HttpServletResponse response) {
+    public ResponseEntity<CommonResponseDTO> logout(HttpServletRequest request, HttpServletResponse response) {
+        CommonResponseDTO commonResponseDTO = new CommonResponseDTO();
+
         boolean success = authService.logout(request, response);
+        commonResponseDTO.setStatus(success);
         if (success) {
-            return ResponseEntity.ok("Logged out successfully.");
+            commonResponseDTO.setMessage("Logged out successfully!");
+            return ResponseEntity.ok(commonResponseDTO);
         } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Logout failed.");
+            commonResponseDTO.setMessage("Failed to logout!");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(commonResponseDTO);
         }
     }
 
