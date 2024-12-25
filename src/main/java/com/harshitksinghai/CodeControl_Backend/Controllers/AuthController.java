@@ -12,9 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -72,6 +75,58 @@ public class AuthController {
     @PostMapping("/verify-otp")
     public ResponseEntity<CommonResponseDTO> verifyOTP(@RequestBody VerifyOTPRequestDTO verifyOTPRequestDTO){
         return authService.verifyOTP(verifyOTPRequestDTO);
+    }
+
+    @PostMapping("/oauth-google")
+    public ResponseEntity<CommonResponseDTO> handleGoogleLogin(
+            @AuthenticationPrincipal OAuth2User principal,
+            HttpServletResponse response) {
+
+        CommonResponseDTO commonResponseDTO = new CommonResponseDTO();
+
+        try {
+            boolean res = authService.handleGoogleLogin(principal, response);
+            commonResponseDTO.setStatus(res);
+
+            if (res) {
+                commonResponseDTO.setMessage("Google OAuth successful!");
+                // Instead of redirecting, you might want to return a success response
+                return new ResponseEntity<>(commonResponseDTO, HttpStatus.OK);
+            } else {
+                commonResponseDTO.setMessage("Google OAuth failed!");
+                return new ResponseEntity<>(commonResponseDTO, HttpStatus.BAD_REQUEST);
+            }
+        } catch (Exception e) {
+            commonResponseDTO.setStatus(false);
+            commonResponseDTO.setMessage("An error occurred during Google OAuth");
+            return new ResponseEntity<>(commonResponseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/oauth-github")
+    public ResponseEntity<CommonResponseDTO> handleGithubLogin(
+            @AuthenticationPrincipal OAuth2User principal,
+            HttpServletResponse response) {
+
+        CommonResponseDTO commonResponseDTO = new CommonResponseDTO();
+
+        try {
+            boolean res = authService.handleGithubLogin(principal, response);
+            commonResponseDTO.setStatus(res);
+
+            if (res) {
+                commonResponseDTO.setMessage("GitHub OAuth successful!");
+                // Instead of redirecting, return a success response
+                return new ResponseEntity<>(commonResponseDTO, HttpStatus.OK);
+            } else {
+                commonResponseDTO.setMessage("GitHub OAuth failed!");
+                return new ResponseEntity<>(commonResponseDTO, HttpStatus.BAD_REQUEST);
+            }
+        } catch (Exception e) {
+            commonResponseDTO.setStatus(false);
+            commonResponseDTO.setMessage("An error occurred during GitHub OAuth");
+            return new ResponseEntity<>(commonResponseDTO, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @PostMapping("/register")

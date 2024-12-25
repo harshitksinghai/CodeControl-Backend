@@ -5,6 +5,7 @@ import com.harshitksinghai.CodeControl_Backend.DTOs.ResponseDTO.CommonResponseDT
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.transaction.annotation.Transactional;
 
 public interface AuthService {
@@ -30,4 +31,8 @@ public interface AuthService {
     ResponseEntity<String> refreshTokenAccess(HttpServletRequest request, HttpServletResponse response);
 
     ResponseEntity<CommonResponseDTO> sendOTPEmail(String email);
+
+    boolean handleGoogleLogin(OAuth2User principal, HttpServletResponse response);
+
+    boolean handleGithubLogin(OAuth2User principal, HttpServletResponse response);
 }

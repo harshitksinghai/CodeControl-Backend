@@ -29,6 +29,10 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    private String githubId;
+
+    private String googleId;
+
     @OneToOne
     private RefreshToken refreshToken;
 

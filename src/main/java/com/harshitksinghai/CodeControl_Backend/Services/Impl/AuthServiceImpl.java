@@ -23,31 +23,38 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
-
 import java.util.Optional;
 
 @Service
 public class AuthServiceImpl implements AuthService {
     private final Logger LOG = LoggerFactory.getLogger(AuthServiceImpl.class);
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtils jwtUtils;
+    private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
+    private final UserRepository userRepository;
+    private final UserService userService;
 
-    @Autowired
-    private JwtUtils jwtUtils;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    RefreshTokenService refreshTokenService;
-
-    @Autowired
-    UserService userService;
-
-    @Autowired
-    UserRepository userRepository;
+    // Constructor injection instead of @Autowired
+    public AuthServiceImpl(
+            AuthenticationManager authenticationManager,
+            JwtUtils jwtUtils,
+            PasswordEncoder passwordEncoder,
+            RefreshTokenService refreshTokenService,
+            UserRepository userRepository,
+            UserService userService
+    ) {
+        this.authenticationManager = authenticationManager;
+        this.jwtUtils = jwtUtils;
+        this.passwordEncoder = passwordEncoder;
+        this.refreshTokenService = refreshTokenService;
+        this.userRepository = userRepository;
+        this.userService = userService;
+    }
 
     @Autowired
     OTPService otpService;
@@ -160,6 +167,90 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public boolean handleGoogleLogin(OAuth2User principal, HttpServletResponse response) {
+        System.out.println("handleGoogleLogin called with user: " + principal.getAttributes());
+
+        String googleId = principal.getAttribute("sub");
+        String email = principal.getAttribute("email");
+        String firstName = principal.getAttribute("given_name");
+        String lastName = principal.getAttribute("family_name");
+
+        String role = String.valueOf(Role.USER);
+        String jwtToken = jwtUtils.generateToken(email, role);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(email);
+
+        // Check if user exists
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if(userOpt.isEmpty()){
+            User newUser = new User();
+            newUser.setGoogleId(googleId);
+            newUser.setEmail(email);
+            newUser.setFirstName(firstName);
+            newUser.setLastName(lastName);
+            newUser.setRole(Role.USER); // Default role
+            newUser.setRefreshToken(refreshToken);
+            userRepository.save(newUser);
+        }
+        else{
+            User user = userOpt.get();
+
+            // Link GitHub ID if not linked
+            if (user.getGoogleId() == null) {
+                user.setGoogleId(googleId);
+            }
+            user.setRefreshToken(refreshToken);
+            userRepository.save(user);
+        }
+
+        CookieUtils.addCookie(response, jwtCookieName, jwtToken, jwtExpirationMs);
+        CookieUtils.addCookie(response, jwtRefreshCookieName, refreshToken.getToken(), refreshTokenService.getJwtRefreshExpirationMs(refreshToken.getToken()));
+
+        return true;
+    }
+
+    @Override
+    public boolean handleGithubLogin(OAuth2User principal, HttpServletResponse response) {
+        System.out.println("handleGithubLogin called with user: " + principal.getAttributes());
+
+        String githubId = principal.getAttribute("id").toString();
+        String email = principal.getAttribute("email");
+        String username = principal.getAttribute("login");
+
+        String role = String.valueOf(Role.USER);
+        String jwtToken = jwtUtils.generateToken(email, role);
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(email);
+
+        // Check if user exists
+        Optional<User> userOpt = userRepository.findByEmail(email);
+
+        if(userOpt.isEmpty()){
+            User newUser = new User();
+            newUser.setGithubId(githubId);
+            newUser.setEmail(email);
+            //newUser.setFirstName(username); // Use GitHub username
+            newUser.setRole(Role.USER); // Default role
+            newUser.setRefreshToken(refreshToken);
+            userRepository.save(newUser);
+        }
+        else{
+            User user = userOpt.get();
+
+            // Link GitHub ID if not linked
+            if (user.getGithubId() == null) {
+                user.setGithubId(githubId);
+            }
+            user.setRefreshToken(refreshToken);
+            userRepository.save(user);
+        }
+
+        CookieUtils.addCookie(response, jwtCookieName, jwtToken, jwtExpirationMs);
+        CookieUtils.addCookie(response, jwtRefreshCookieName, refreshToken.getToken(), refreshTokenService.getJwtRefreshExpirationMs(refreshToken.getToken()));
+
+        return true;
+    }
+
+    @Override
     public boolean register(RegisterRequestDTO registerRequestDTO, HttpServletResponse response) {
         String email = registerRequestDTO.getEmail();
 
@@ -214,15 +305,33 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public boolean checkOnBoard(HttpServletRequest request) {
-        // Extract email from JWT in HttpOnly cookie
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName(); // Extracted from the JWT
+        try {
+            // Try to get authentication from SecurityContext
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            String email;
 
-        Optional<User> userOpt = userRepository.findByEmail(email);
-        if(userOpt.get().getFirstName() != null && userOpt.get().getLastName() != null){
-            return true;
+            if (authentication instanceof OAuth2AuthenticationToken) {
+                // If it's OAuth2 authentication, get email from OAuth2User
+                OAuth2User oauth2User = ((OAuth2AuthenticationToken) authentication).getPrincipal();
+                email = oauth2User.getAttribute("email");
+            } else {
+                // For JWT authentication
+                email = authentication.getName();
+            }
+
+            if (email == null) {
+                return false;
+            }
+
+            Optional<User> userOpt = userRepository.findByEmail(email);
+            return userOpt.map(user ->
+                    user.getFirstName() != null && user.getLastName() != null
+            ).orElse(false);
+
+        } catch (Exception e) {
+            LOG.error("Error checking onboard status: ", e);
+            return false;
         }
-        return false;
     }
 
     @Override
@@ -262,26 +371,25 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public boolean logout(HttpServletRequest request, HttpServletResponse response) {
         try {
-            // Retrieve the cookies from the request
+            // Existing cookie cleanup
             Cookie[] cookies = request.getCookies();
-            if (cookies == null) {
-                return false; // No cookies present
-            }
+            if (cookies != null) {
+                for (Cookie cookie : cookies) {
+                    if (jwtCookieName.equals(cookie.getName()) ||
+                            jwtRefreshCookieName.equals(cookie.getName())){
 
-            // Iterate over cookies to find the JWT and refresh token cookies
-            for (Cookie cookie : cookies) {
-                if (jwtCookieName.equals(cookie.getName()) || jwtRefreshCookieName.equals(cookie.getName())) {
-                    // Delete the cookie
-                    CookieUtils.deleteCookie(response, cookie.getName());
+                        CookieUtils.deleteCookie(response, cookie.getName());
+                    }
                 }
             }
 
-            // Get the email of the logged-in user from the SecurityContext
+            // Get the email and authentication details
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
             if (authentication != null && authentication.isAuthenticated()) {
                 String email = authentication.getName();
 
-                // Remove the refresh token from the database
+                // Handle database cleanup
                 Optional<User> userOpt = userRepository.findByEmail(email);
                 if (userOpt.isPresent()) {
                     User user = userOpt.get();
@@ -295,12 +403,12 @@ public class AuthServiceImpl implements AuthService {
                 }
             }
 
-            // Clear the SecurityContext
+            // Clear security context
             SecurityContextHolder.clearContext();
 
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Error during logout: ", e);
             return false;
         }
     }
@@ -352,9 +460,6 @@ public class AuthServiceImpl implements AuthService {
 
         return ResponseEntity.ok("Tokens refreshed successfully.");
     }
-
-
-
 
 }
 
