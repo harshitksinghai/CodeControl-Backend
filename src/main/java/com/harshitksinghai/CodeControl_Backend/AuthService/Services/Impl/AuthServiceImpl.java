@@ -9,7 +9,6 @@ import com.harshitksinghai.CodeControl_Backend.AuthService.Models.RefreshToken;
 import com.harshitksinghai.CodeControl_Backend.AuthService.Models.User;
 import com.harshitksinghai.CodeControl_Backend.AuthService.Repositories.UserRepository;
 import com.harshitksinghai.CodeControl_Backend.AuthService.Services.*;
-import com.harshitksinghai.CodeControl_Backend.Services.*;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -59,9 +58,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Autowired
     OTPService otpService;
-
-    @Autowired
-    LinkService linkService;
 
     @Autowired
     EmailService emailService;
