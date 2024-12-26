@@ -202,9 +202,9 @@ public class AuthController {
         }
     }
 
-    @GetMapping("/clear-expired-otps-links")
-    public ResponseEntity<String> clearExpiredOTPLink(){
-        return authService.clearExpiredOTPsLinks();
+    @GetMapping("/clear-expired-otps")
+    public ResponseEntity<String> clearExpiredOTP(){
+        return authService.clearExpiredOTPs();
     }
 
     @PostMapping("/refresh-token")

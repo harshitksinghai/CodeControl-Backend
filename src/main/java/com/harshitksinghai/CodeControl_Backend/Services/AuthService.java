@@ -24,7 +24,7 @@ public interface AuthService {
 
     boolean onBoard(OnBoardRequestDTO onBoardRequestDTO, HttpServletRequest request);
 
-    ResponseEntity<String> clearExpiredOTPsLinks();
+    ResponseEntity<String> clearExpiredOTPs();
 
     boolean logout(HttpServletRequest request, HttpServletResponse response);
 

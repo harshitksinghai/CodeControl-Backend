@@ -354,18 +354,14 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    public ResponseEntity<String> clearExpiredOTPsLinks() {
+    public ResponseEntity<String> clearExpiredOTPs() {
         LOG.info("inside clearExpiredOTPsLinks in UserAuthServiceImpl");
 
         LOG.info("clearing expired otps");
         otpService.clearExpiredOTPs();
         LOG.info("expired otps cleared successfully");
 
-        LOG.info("clearing expired links");
-        linkService.clearExpiredLinks();
-        LOG.info("expired links cleared successfully");
-
-        return new ResponseEntity<>("successfully cleared expired otps and links", HttpStatus.OK);
+        return new ResponseEntity<>("successfully cleared expired otps", HttpStatus.OK);
     }
 
     @Override
