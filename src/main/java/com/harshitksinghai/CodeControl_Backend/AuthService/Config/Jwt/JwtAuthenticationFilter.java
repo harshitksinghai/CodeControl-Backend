@@ -5,6 +5,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -18,6 +20,7 @@ import java.util.Optional;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+    private final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
     @Autowired
     private JwtUtils jwtUtils;
 
@@ -27,29 +30,43 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         try {
+            // Debug log all cookies
+            if (request.getCookies() != null) {
+                logger.debug("Cookies present in request:");
+                for (Cookie cookie : request.getCookies()) {
+                    logger.debug("Cookie name: " + cookie.getName() + ", Path: " + cookie.getPath());
+                }
+            } else {
+                logger.debug("No cookies present in request");
+            }
+
             // Retrieve JWT from HTTP-only cookies
             Optional<Cookie> jwtCookie = getJwtCookie(request, "codecontrol-jwt");
 
             if (jwtCookie.isPresent()) {
+                logger.debug("JWT cookie found");
                 String jwtToken = jwtCookie.get().getValue();
 
                 if (jwtUtils.validateToken(jwtToken)) {
                     String username = jwtUtils.getUsernameFromToken(jwtToken);
-                    //System.out.println("jwtUtils.getUsernameFromToken(jwtToken); returned username: " + username);
-                    // Load user details for authentication
+                    logger.debug("Valid JWT token found for user: " + username);
+
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                    logger.debug("User authorities: " + userDetails.getAuthorities());
 
                     UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
                     );
 
-                    // Set the authenticated user in the security context
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                } else {
+                    logger.debug("Invalid JWT token");
                 }
+            } else {
+                logger.debug("No JWT cookie found");
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}");
-            e.printStackTrace();
+            logger.error("Cannot set user authentication: ", e);
         }
 
         filterChain.doFilter(request, response);

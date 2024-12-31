@@ -40,6 +40,13 @@ spring:
             client-secret: ${GITHUB_CLIENT_SECRET}
             scope: read:user, user:email
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 1000MB #max file size allowed for single file upload
+      max-request-size: 1000MB #max request size allowed for multipart/form-data requests
+
+
 CodeControl-Backend:
   app:
     jwtCookieName: codecontrol-jwt
@@ -53,3 +60,11 @@ site:
   url: http://localhost:8080/api
 
 #debug: true
+
+logging:
+  level:
+    org.springframework.security: trace
+
+files:
+    upload:
+      video: uploads-video/

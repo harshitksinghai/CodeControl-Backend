@@ -47,6 +47,14 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // Public endpoints
+
+                        .requestMatchers("/api/home/**").hasAnyRole("ADMIN", "MANAGER", "CREATOR", "USER") // Roles who can access the home page
+                        .requestMatchers("/api/video/stream/**").hasAnyRole("ADMIN", "MANAGER", "CREATOR", "USER")
+                        .requestMatchers("/api/video/**").hasAuthority("RESOURCE_CREATE")
+
+                        .requestMatchers("/api/notes/").hasAnyRole("ADMIN", "MANAGER", "CREATOR", "USER")
+                        .requestMatchers("/api/notes/**").hasAuthority("RESOURCE_CREATE")
+
                         .anyRequest().authenticated() // Protect other endpoints
                 )
                 .oauth2Login(oauth2 -> oauth2
