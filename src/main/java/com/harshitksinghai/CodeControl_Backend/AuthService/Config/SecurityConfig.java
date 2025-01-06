@@ -48,11 +48,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll() // Public endpoints
 
-                        .requestMatchers("/api/home/**").hasAnyRole("ADMIN", "MANAGER", "CREATOR", "USER") // Roles who can access the home page
-                        .requestMatchers("/api/video/stream/**").hasAnyRole("ADMIN", "MANAGER", "CREATOR", "USER")
-                        .requestMatchers("/api/video/**").hasAuthority("RESOURCE_CREATE")
+                        .requestMatchers("/api/home/**").hasAnyRole("HEAD", "ADMIN", "MANAGER", "CREATOR", "USER") // Roles who can access the home page
 
-                        .requestMatchers("/api/notes/").hasAnyRole("ADMIN", "MANAGER", "CREATOR", "USER")
+                        .requestMatchers("/api/video/upload/**").hasAuthority("RESOURCE_CREATE")
+                        .requestMatchers("/api/video/stream/**").hasAuthority("RESOURCE_READ")
+                        .requestMatchers("/api/video/update/**").hasAuthority("RESOURCE_UPDATE")
+                        .requestMatchers("/api/video/delete/**").hasAuthority("RESOURCE_DELETE")
+
+                        .requestMatchers("/api/notes/").hasAnyRole("HEAD", "ADMIN", "MANAGER", "CREATOR", "USER")
                         .requestMatchers("/api/notes/**").hasAuthority("RESOURCE_CREATE")
 
                         .anyRequest().authenticated() // Protect other endpoints

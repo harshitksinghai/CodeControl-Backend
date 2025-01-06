@@ -66,5 +66,10 @@ logging:
     org.springframework.security: trace
 
 files:
-    upload:
-      video: uploads-video/
+  upload:
+    video: uploads-video
+    video-hls: uploads-video-hls
+    notes:
+
+constants:
+  chunk-size: 1024*1024

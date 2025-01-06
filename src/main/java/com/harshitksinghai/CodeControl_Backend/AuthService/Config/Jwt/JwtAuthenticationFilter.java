@@ -54,6 +54,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                     logger.debug("User authorities: " + userDetails.getAuthorities());
 
+                    // Log the authorities to debug
+                    logger.debug("User {} has authorities: {}", username, userDetails.getAuthorities());
+
                     UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities()
                     );
