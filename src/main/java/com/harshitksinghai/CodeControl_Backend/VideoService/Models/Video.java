@@ -27,9 +27,4 @@ public class Video {
     @Enumerated(EnumType.STRING)
     private VideoStatus status;
 
-//    @ManyToOne
-//    private User approvedBy; // Who approved the video
-//
-//    @ManyToOne
-//    private User uploadedBy; // Who uploaded the video
 }
